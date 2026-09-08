@@ -6,5 +6,9 @@
 4. **Keep raw CSV rows beside parsed fields.** Alternative: store only cleaned values. Reason: dirty rows must survive import so comparison mistakes can be audited.
 5. **Record import issues instead of rejecting rows.** Alternative: fail the import on bad numbers or blank values. Reason: the assignment asks the importer to survive messy exports without silently dropping rows.
 6. **Normalize System B references during import.** Alternative: normalize only inside comparison code. Reason: storing the normalized key makes later matching code simpler and easier to inspect.
-
-Comparison and tenant-scoping decisions will be added in the next step.
+7. **Compare System A `total_value` against System B `value`.** Alternative: compare base value, adjustment, or other event fields. Reason: the brief asks for disagreement in the systems' reported value, and these are the directly comparable amount fields.
+8. **Use decimal arithmetic for all amounts.** Alternative: parse amounts as floats. Reason: currency-like values need exact comparison without binary floating-point rounding surprises.
+9. **Treat blank or invalid amounts as data issues, not zero.** Alternative: coerce blank or bad values to `0`. Reason: zero is a real amount, while a missing or unparseable amount means the source data cannot support a trustworthy comparison.
+10. **Match records only within the same organization.** Alternative: match globally by record id alone. Reason: the brief says tenant data must not leak, so the organization from `locations.csv` is part of the comparison boundary.
+11. **Allow only a documented likely split exception for `REC-1055`.** Alternative: consider any entries with an equal combined sum to be a valid split. Reason: an equal sum alone could hide duplicate or unrelated entries, so `REC-1055` is treated as likely legitimate only when the entries are in the same organization, their labels indicate they are split parts, and their combined amount equals System A's amount.
+12. **Leave date differences and voided-record handling outside the initial comparison scope.** Alternative: add date/state reconciliation in the first comparison pass. Reason: the minimum required value disagreements should be completed and tested first, while date/state interpretation can be documented as future work.

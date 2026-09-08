@@ -4,7 +4,7 @@ A take-home project for comparing System A and System B records within organizat
 
 ## Current status
 
-Step 2 is complete: Django and Django REST Framework backend, React/Vite frontend, SQLite configuration, original CSV inputs, and a durable importer that loads all three CSVs while recording dirty values as import issues. Comparison, tenant-scoped APIs, and the results table are not implemented yet.
+Step 2 is complete: Django and Django REST Framework backend, React/Vite frontend, SQLite configuration, original CSV inputs, a durable importer, and documented comparison rules. Comparison logic, tenant-scoped APIs, and the results table are not implemented yet.
 
 ## Requirements
 
@@ -50,6 +50,16 @@ npm.cmd run build
 - `data/`: Original input CSVs, unchanged (5 locations, 120 A records, 121 B entries).
 - `DECISIONS.md`: Implementation choices and rejected alternatives.
 
+## Comparison rules to implement next
+
+- Compare System A `total_value` against System B `value`.
+- Normalize supported System B reference formats while preserving original CSV values.
+- Use decimal arithmetic for amounts.
+- Treat blank or invalid amounts as data issues, never zero.
+- Match records only within the same organization from `locations.csv`.
+- Treat `REC-1055` as a likely legitimate split only when same-org split labels and the combined amount support that interpretation; an equal sum alone is not enough.
+- Date differences and voided-record handling are outside the initial comparison scope.
+
 ## Deliberately omitted
 
 Authentication, elaborate visual design, and performance optimization are outside the initial assignment scope. Reconciliation features remain planned work, not completed omissions.
@@ -71,4 +81,5 @@ To be completed after implementing and testing the comparison rules.
 ### If you had a second day, what would you fix first?
 
 To be completed after the working slice is evaluated.
+
 

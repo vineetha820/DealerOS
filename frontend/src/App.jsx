@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
-const ORGS = ['ORG-A', 'ORG-B']
+const PAGE_SIZE = 10
 const REASONS = [
   'data_issue',
   'duplicate_b_entries',
@@ -19,15 +19,18 @@ const REASON_LABELS = {
 }
 
 function App() {
-  const [orgId, setOrgId] = useState('ORG-A')
   const [reason, setReason] = useState('')
   const [sortByValue, setSortByValue] = useState(false)
-  const [data, setData] = useState({ count: 0, results: [] })
+  const [page, setPage] = useState(1)
+  const [data, setData] = useState({ count: 0, page: 1, page_size: PAGE_SIZE, total_pages: 1, results: [] })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
   const apiUrl = useMemo(() => {
-    const params = new URLSearchParams({ org_id: orgId })
+    const params = new URLSearchParams({
+      page: String(page),
+      page_size: String(PAGE_SIZE),
+    })
 
     if (reason) {
       params.set('reason', reason)
@@ -38,7 +41,7 @@ function App() {
     }
 
     return `/api/disagreements/?${params.toString()}`
-  }, [orgId, reason, sortByValue])
+  }, [page, reason, sortByValue])
 
   useEffect(() => {
     let shouldIgnore = false
@@ -61,7 +64,7 @@ function App() {
       } catch (caughtError) {
         if (!shouldIgnore) {
           setError(caughtError.message)
-          setData({ count: 0, results: [] })
+          setData({ count: 0, page: 1, page_size: PAGE_SIZE, total_pages: 1, results: [] })
         }
       } finally {
         if (!shouldIgnore) {
@@ -77,28 +80,41 @@ function App() {
     }
   }, [apiUrl])
 
+  function changeReason(nextReason) {
+    setReason(nextReason)
+    setPage(1)
+  }
+
+  function changeSortByValue(shouldSort) {
+    setSortByValue(shouldSort)
+    setPage(1)
+  }
+
+  function goToPreviousPage() {
+    if (page > 1) {
+      setPage(page - 1)
+    }
+  }
+
+  function goToNextPage() {
+    if (page < data.total_pages) {
+      setPage(page + 1)
+    }
+  }
+
   return (
     <main className="page-shell">
       <header className="page-header">
         <div>
           <h1>DealerOS Reconciliation</h1>
-          <p>{data.count} disagreements for {orgId}</p>
+          <p>{data.count} disagreements</p>
         </div>
       </header>
 
       <section className="toolbar" aria-label="Disagreement filters">
         <label>
-          Org
-          <select value={orgId} onChange={(event) => setOrgId(event.target.value)}>
-            {ORGS.map((org) => (
-              <option value={org} key={org}>{org}</option>
-            ))}
-          </select>
-        </label>
-
-        <label>
           Reason
-          <select value={reason} onChange={(event) => setReason(event.target.value)}>
+          <select value={reason} onChange={(event) => changeReason(event.target.value)}>
             <option value="">All reasons</option>
             {REASONS.map((reasonOption) => (
               <option value={reasonOption} key={reasonOption}>{REASON_LABELS[reasonOption]}</option>
@@ -109,7 +125,7 @@ function App() {
         <label className="checkbox-label">
           <input
             checked={sortByValue}
-            onChange={(event) => setSortByValue(event.target.checked)}
+            onChange={(event) => changeSortByValue(event.target.checked)}
             type="checkbox"
           />
           Sort by value
@@ -120,39 +136,49 @@ function App() {
       {isLoading && <p className="status">Loading disagreements...</p>}
 
       {!isLoading && !error && (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Reason</th>
-                <th>Record</th>
-                <th>Location</th>
-                <th>System A value</th>
-                <th>System B value</th>
-                <th>System B entries</th>
-                <th>Message</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.results.map((item) => (
-                <tr key={`${item.reason}-${item.org_id}-${item.record_id}-${item.b_entry_ids.join('-')}`}>
-                  <td>{REASON_LABELS[item.reason] || item.reason}</td>
-                  <td>{item.record_id}</td>
-                  <td>{item.location_name || item.location_id}</td>
-                  <td>{formatValue(item.a_value)}</td>
-                  <td>{formatValues(item.b_values)}</td>
-                  <td>{formatEntries(item.b_entry_ids)}</td>
-                  <td>{item.message}</td>
-                </tr>
-              ))}
-              {data.results.length === 0 && (
+        <>
+          <div className="table-wrap">
+            <table>
+              <thead>
                 <tr>
-                  <td colSpan="7" className="empty-state">No disagreements found.</td>
+                  <th>Reason</th>
+                  <th>Record</th>
+                  <th>Location</th>
+                  <th>System A value</th>
+                  <th>System B value</th>
+                  <th>Message</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {data.results.map((item) => (
+                  <tr key={`${item.reason}-${item.org_id}-${item.record_id}-${item.b_entry_ids.join('-')}`}>
+                    <td>{REASON_LABELS[item.reason] || item.reason}</td>
+                    <td>{item.record_id}</td>
+                    <td>{item.location_name || item.location_id}</td>
+                    <td>{formatValue(item.a_value)}</td>
+                    <td>{formatValues(item.b_values)}</td>
+                    <td>{item.message}</td>
+                  </tr>
+                ))}
+                {data.results.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="empty-state">No disagreements found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="pagination" aria-label="Pagination controls">
+            <button type="button" onClick={goToPreviousPage} disabled={page <= 1}>
+              Previous
+            </button>
+            <span>Page {data.page} of {data.total_pages}</span>
+            <button type="button" onClick={goToNextPage} disabled={page >= data.total_pages}>
+              Next
+            </button>
+          </div>
+        </>
       )}
     </main>
   )
@@ -172,14 +198,6 @@ function formatValue(value) {
   }
 
   return value
-}
-
-function formatEntries(entries) {
-  if (!entries || entries.length === 0) {
-    return '-'
-  }
-
-  return entries.join(', ')
 }
 
 export default App

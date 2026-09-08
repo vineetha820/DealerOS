@@ -182,13 +182,20 @@ class DisagreementApiTests(TestCase):
             location_name="Location B",
         )
 
-    def test_api_requires_org_id(self):
+    def test_api_returns_all_disagreements_by_default(self):
+        self.make_a("REC-1001", "10.00", self.loc_a)
+        self.make_b("ENT-1", "REC-1001", "12.00", self.loc_a)
+        self.make_a("REC-2001", "20.00", self.loc_b)
+
         response = self.client.get("/api/disagreements/")
 
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json()["error"], "org_id query parameter is required.")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["count"], 2)
+        reasons = sorted(item["reason"] for item in data["results"])
+        self.assertEqual(reasons, [MISSING_IN_B, VALUE_MISMATCH])
 
-    def test_api_returns_only_requested_org_disagreements(self):
+    def test_api_can_still_filter_by_org_for_backend_safety(self):
         self.make_a("REC-1001", "10.00", self.loc_a)
         self.make_b("ENT-1", "REC-1001", "12.00", self.loc_a)
         self.make_a("REC-2001", "20.00", self.loc_b)
@@ -206,7 +213,7 @@ class DisagreementApiTests(TestCase):
         self.make_b("ENT-1", "REC-1001", "12.00", self.loc_a)
         self.make_a("REC-1002", "15.00", self.loc_a)
 
-        response = self.client.get(f"/api/disagreements/?org_id=ORG-A&reason={MISSING_IN_B}")
+        response = self.client.get(f"/api/disagreements/?reason={MISSING_IN_B}")
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -220,11 +227,27 @@ class DisagreementApiTests(TestCase):
         self.make_a("REC-1002", "10.00", self.loc_a)
         self.make_b("ENT-2", "REC-1002", "11.00", self.loc_a)
 
-        response = self.client.get("/api/disagreements/?org_id=ORG-A&sort=value")
+        response = self.client.get("/api/disagreements/?sort=value")
 
         self.assertEqual(response.status_code, 200)
         records = [item["record_id"] for item in response.json()["results"]]
         self.assertEqual(records, ["REC-1002", "REC-1001"])
+
+    def test_api_paginates_results(self):
+        for index in range(1, 4):
+            record_id = f"REC-100{index}"
+            self.make_a(record_id, str(index), self.loc_a)
+
+        response = self.client.get("/api/disagreements/?page=2&page_size=2")
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["count"], 3)
+        self.assertEqual(data["page"], 2)
+        self.assertEqual(data["page_size"], 2)
+        self.assertEqual(data["total_pages"], 2)
+        self.assertEqual(len(data["results"]), 1)
+        self.assertEqual(data["results"][0]["record_id"], "REC-1003")
 
     def make_a(self, record_id, amount, location, warnings=None):
         return SystemARecord.objects.create(
@@ -250,4 +273,6 @@ class DisagreementApiTests(TestCase):
             import_warnings=warnings or [],
             raw_data={"entry_id": entry_id, "record_ref": record_ref, "value": amount or ""},
         )
+
+
 

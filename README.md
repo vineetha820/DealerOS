@@ -66,7 +66,7 @@ Authentication, elaborate visual design, and performance optimization are outsid
 
 ## How I worked with the agent
 
-The agent inspected the brief and CSV files, outlined the implementation plan, and scaffolded the project. The agent added the importer and I checked it by running migrations, importing the supplied CSVs, and adding a focused test for dirty-row preservation. The first visible correction was that Django needed defaults for new non-null migration fields, which was fixed before continuing.
+The agent inspected the brief and CSV files, outlined the implementation plan, and scaffolded the project. The agent added the importer and I checked it by running migrations, importing the supplied CSVs, and adding a focused test for dirty-row preservation. The first visible correction was that a separate import-issue table was unnecessary, so dirty data is now kept on the imported rows through `import_warnings`.
 
 ## Required reflection questions
 
@@ -81,5 +81,6 @@ To be completed after implementing and testing the comparison rules.
 ### If you had a second day, what would you fix first?
 
 To be completed after the working slice is evaluated.
+
 
 

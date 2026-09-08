@@ -29,21 +29,6 @@ class Location(models.Model):
         return self.location_name
 
 
-class ImportIssue(models.Model):
-    source_file = models.CharField(max_length=50)
-    row_number = models.PositiveIntegerField()
-    field_name = models.CharField(max_length=100, blank=True)
-    raw_value = models.TextField(blank=True)
-    message = models.CharField(max_length=255)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["source_file", "row_number", "id"]
-
-    def __str__(self):
-        return f"{self.source_file}:{self.row_number} {self.message}"
-
-
 class SystemARecord(models.Model):
     record_id = models.CharField(max_length=50, db_index=True)
     location = models.ForeignKey(
@@ -104,5 +89,4 @@ class SystemBEntry(models.Model):
     raw_data = models.JSONField(default=dict)
 
     def __str__(self):
-        return self.entry_id
-
+        return self.entry_id or self.record_ref

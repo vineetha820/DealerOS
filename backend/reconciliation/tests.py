@@ -1,16 +1,16 @@
 ﻿from decimal import Decimal
 from io import StringIO
-from tempfile import TemporaryDirectory
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from django.core.management import call_command
 from django.test import TestCase
 
-from reconciliation.models import ImportIssue, Location, Organization, SystemARecord, SystemBEntry
+from reconciliation.models import Location, Organization, SystemARecord, SystemBEntry
 
 
 class ImportReconciliationDataTests(TestCase):
-    def test_import_keeps_dirty_rows_and_records_issues(self):
+    def test_import_keeps_dirty_rows_and_stores_warnings_on_rows(self):
         with TemporaryDirectory() as temp_dir:
             data_dir = Path(temp_dir)
             (data_dir / "locations.csv").write_text(
@@ -53,5 +53,4 @@ class ImportReconciliationDataTests(TestCase):
         self.assertEqual(numeric_ref.normalized_record_ref, "REC-1003")
         self.assertEqual(numeric_ref.value, Decimal("1"))
 
-        self.assertEqual(ImportIssue.objects.count(), 2)
-        self.assertIn("Imported 1 locations, 2 System A records, 3 System B entries", output.getvalue())
+        self.assertIn("Imported 1 locations, 2 System A records, 3 System B entries, 2 row warnings", output.getvalue())

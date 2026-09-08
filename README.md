@@ -4,7 +4,7 @@ A take-home project for comparing System A and System B records within organizat
 
 ## Current status
 
-Step 2 is complete: Django and Django REST Framework backend, React/Vite frontend, SQLite configuration, original CSV inputs, a durable importer, and documented comparison rules. Comparison logic, tenant-scoped APIs, and the results table are not implemented yet.
+Comparison logic is complete: Django and Django REST Framework backend, React/Vite frontend, SQLite configuration, original CSV inputs, a durable importer, documented comparison rules, and tested disagreement detection. Tenant-scoped APIs and the results table are not implemented yet.
 
 ## Requirements
 
@@ -50,7 +50,7 @@ npm.cmd run build
 - `data/`: Original input CSVs, unchanged (5 locations, 120 A records, 121 B entries).
 - `DECISIONS.md`: Implementation choices and rejected alternatives.
 
-## Comparison rules to implement next
+## Implemented comparison rules
 
 - Compare System A `total_value` against System B `value`.
 - Normalize supported System B reference formats while preserving original CSV values.
@@ -59,6 +59,12 @@ npm.cmd run build
 - Match records only within the same organization from `locations.csv`.
 - Treat `REC-1055` as a likely legitimate split only when same-org split labels and the combined amount support that interpretation; an equal sum alone is not enough.
 - Date differences and voided-record handling are outside the initial comparison scope.
+
+To inspect the current disagreements after importing data:
+
+```powershell
+backend/.venv/Scripts/python.exe backend/manage.py compare_reconciliation_data --details
+```
 
 ## Deliberately omitted
 
@@ -81,6 +87,7 @@ To be completed after implementing and testing the comparison rules.
 ### If you had a second day, what would you fix first?
 
 To be completed after the working slice is evaluated.
+
 
 
 

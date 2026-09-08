@@ -4,7 +4,7 @@ A take-home project for comparing System A and System B records within organizat
 
 ## Current status
 
-Comparison logic is complete: Django and Django REST Framework backend, React/Vite frontend, SQLite configuration, original CSV inputs, a durable importer, documented comparison rules, and tested disagreement detection. Tenant-scoped APIs and the results table are not implemented yet.
+Backend API is complete for the current slice: Django and Django REST Framework backend, React/Vite frontend, SQLite configuration, original CSV inputs, a durable importer, documented comparison rules, tested disagreement detection, and a tenant-scoped disagreements endpoint. The React results table is not implemented yet.
 
 ## Requirements
 
@@ -29,7 +29,7 @@ npm.cmd ci
 npm.cmd run dev
 ```
 
-Open the frontend URL printed by Vite (normally http://localhost:5173). Django runs at http://127.0.0.1:8000. The frontend currently shows a placeholder and does not call the backend.
+Open the frontend URL printed by Vite (normally http://localhost:5173). Django runs at http://127.0.0.1:8000. The frontend currently shows a placeholder and does not call the backend yet.
 
 Django settings are for local development; the checked-in key is an explicit development placeholder.
 
@@ -60,11 +60,17 @@ npm.cmd run build
 - Treat `REC-1055` as a likely legitimate split only when same-org split labels and the combined amount support that interpretation; an equal sum alone is not enough.
 - Date differences and voided-record handling are outside the initial comparison scope.
 
-To inspect the current disagreements after importing data:
+The backend exposes disagreements at:
 
-```powershell
-backend/.venv/Scripts/python.exe backend/manage.py compare_reconciliation_data --details
+```text
+GET /api/disagreements/?org_id=ORG-A
 ```
+
+Supported query parameters:
+
+- `org_id`: required tenant boundary, for example `ORG-A` or `ORG-B`.
+- `reason`: optional filter, for example `value_mismatch`.
+- `sort=value`: optional amount sort for the results table.
 
 ## Deliberately omitted
 
@@ -87,6 +93,7 @@ To be completed after implementing and testing the comparison rules.
 ### If you had a second day, what would you fix first?
 
 To be completed after the working slice is evaluated.
+
 
 
 

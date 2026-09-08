@@ -4,7 +4,7 @@ A take-home project for comparing System A and System B records within organizat
 
 ## Current status
 
-Backend API is complete for the current slice: Django and Django REST Framework backend, React/Vite frontend, SQLite configuration, original CSV inputs, a durable importer, documented comparison rules, tested disagreement detection, and a tenant-scoped disagreements endpoint. The React results table is not implemented yet.
+The working slice is complete: Django and Django REST Framework backend, React/Vite frontend, SQLite configuration, original CSV inputs, a durable importer, documented comparison rules, tested disagreement detection, a tenant-scoped disagreements endpoint, and a React table with reason filtering and value sorting.
 
 ## Requirements
 
@@ -29,7 +29,7 @@ npm.cmd ci
 npm.cmd run dev
 ```
 
-Open the frontend URL printed by Vite (normally http://localhost:5173). Django runs at http://127.0.0.1:8000. The frontend currently shows a placeholder and does not call the backend yet.
+Open the frontend URL printed by Vite (normally http://localhost:5173). Django runs at http://127.0.0.1:8000. The frontend proxies `/api` requests to Django during development.
 
 Django settings are for local development; the checked-in key is an explicit development placeholder.
 
@@ -46,7 +46,7 @@ npm.cmd run build
 ## Repository structure
 
 - `backend/`: Django project, importer command, data models, and pinned Python dependencies.
-- `frontend/`: React application and npm dependency lockfile.
+- `frontend/`: React disagreement table, Vite proxy configuration, and npm dependency lockfile.
 - `data/`: Original input CSVs, unchanged (5 locations, 120 A records, 121 B entries).
 - `DECISIONS.md`: Implementation choices and rejected alternatives.
 
@@ -93,6 +93,7 @@ To be completed after implementing and testing the comparison rules.
 ### If you had a second day, what would you fix first?
 
 To be completed after the working slice is evaluated.
+
 
 
 

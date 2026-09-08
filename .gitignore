@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.sqlite3
+# JavaScript
+node_modules/
+dist/
+# Local configuration
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+*.log

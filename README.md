@@ -13,7 +13,7 @@ The backend is Django with Django REST Framework. It includes:
 - comparison logic for missing B entries, unknown B references, duplicate B entries, value mismatches, and data issues
 - tenant-scoped matching through the organization derived from `locations.csv`
 - a REST endpoint for disagreement results
-- tests for the importer, comparison rules, and API behavior
+- tests for the comparison rules
 
 The frontend is React with Vite. It includes:
 
@@ -55,6 +55,15 @@ http://127.0.0.1:8000
 
 During development, Vite proxies `/api` requests to Django.
 
+
+## Re-run The Database Import
+
+Use these commands when you want to apply migrations and reload the CSV data into SQLite:
+
+```powershell
+python backend\manage.py migrate
+python backend\manage.py import_reconciliation_data --reset
+```
 ## API
 
 The backend exposes disagreements at:
@@ -67,8 +76,6 @@ Supported query parameters:
 
 - `reason`: optional filter, for example `value_mismatch`
 - `sort=value`: optional amount sort for the results table
-- `page`: optional page number, defaults to `1`
-- `page_size`: optional page size, defaults to `10`
 
 ## Verify The Project
 
@@ -105,7 +112,7 @@ The current supplied dataset imports as 5 locations, 120 System A records, 121 S
 
 I did not build authentication because the brief says to skip it.
 
-I did not add pagination, background jobs, or performance tuning because the supplied dataset has only a few hundred rows and the brief says performance is not the focus.
+I did not add background jobs or performance tuning because the supplied dataset has only a few hundred rows and the brief says performance is not the focus.
 
 I did not reconcile date differences or voided-record semantics in the first pass. Those need product rules beyond the minimum disagreement types requested in the brief.
 
@@ -113,25 +120,27 @@ I kept the visual design plain. The screen is meant to prove the data flow and c
 
 ## How I Worked With The Agent
 
-I used the agent to read the brief, inspect the CSV files, scaffold the Django and React project, and move through the work in small steps. I asked it to explain code back to me while building so I could check whether the implementation was understandable enough to defend in a follow-up call.
 
-I reviewed the agent's choices as we went. One example was the initial `ImportIssue` database table. After asking whether the brief required it, I decided it was extra structure and had the agent remove it in favor of row-level `import_warnings`.
+I used an AI agent to understand the requirements, create an implementation plan, and break the work into smaller steps.
 
-The agent also helped run verification after each meaningful step: Django checks, importer runs, comparison tests, API tests, frontend lint, frontend build, and local endpoint checks.
+I used AI for the initial full-stack boilerplate, database models, CSV import logic, APIs, and frontend setup. I chose SQLite because this is a small take-home project.
 
-## Required Reflection Questions
+I reviewed and verified the generated code myself by running the application, checking the imported data, debugging issues, and testing the comparison logic. I also used the agent to help with debugging and test cases, but made the final implementation decisions myself.
+
 
 ### What did the AI agent get wrong, and how did you notice?
 
-The agent initially added a separate import-issue database table. I noticed this was probably more than the brief required when reviewing the model design and asking whether the assignment specifically requested that table. The brief only says dirty rows must survive without being silently dropped, so I simplified the design to keep warnings directly on the imported rows.
+The agent initially suggested keeping dirty import problems in a separate database table. I noticed this might be extra because the brief only says dirty rows should survive and not be silently dropped. After checking that requirement, I changed the approach so each imported row keeps its own `import_warnings` and original `raw_data` instead.
 
 ### Which part are you least confident about, and why?
 
-I am least confident about the special handling for `REC-1055`. The rule is documented and intentionally narrow: it checks the same organization, a split-like label, and the combined amount. Still, split handling is usually a product/business rule, so I would want confirmation before generalizing it beyond this one record.
+I am least confident about the special split handling for `REC-1055`. The current rule checks that the entries are in the same organization, have a split-like label, and their combined amount equals the System A amount. It works for the provided data, but in a real product I would want confirmation from the team before applying that rule more generally.
 
 ### If you had a second day, what would you fix first?
 
-I would improve the UI and API around auditability. The next useful improvement would be showing the original raw System A and System B row values in an expandable detail area so a reviewer can quickly understand why each disagreement was flagged.
+I would improve the review experience for each disagreement. The first thing I would add is a simple way to view the original raw System A and System B row values from the CSVs, so it is easier to understand why a row was flagged.
+
+
 
 
 

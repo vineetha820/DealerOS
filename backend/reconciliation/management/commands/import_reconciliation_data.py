@@ -172,6 +172,8 @@ def clean(value):
 
 
 def normalize_record_ref(value):
+    
+    
     cleaned = clean(value).upper().replace(" ", "")
     if cleaned.startswith("REC-"):
         return cleaned
@@ -181,3 +183,5 @@ def normalize_record_ref(value):
     if cleaned.isdigit():
         return f"REC-{cleaned}"
     return ""
+    # return value or ""
+

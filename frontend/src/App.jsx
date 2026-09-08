@@ -1,7 +1,6 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import './App.css'
 
-const PAGE_SIZE = 10
 const REASONS = [
   'data_issue',
   'duplicate_b_entries',
@@ -21,27 +20,9 @@ const REASON_LABELS = {
 function App() {
   const [reason, setReason] = useState('')
   const [sortByValue, setSortByValue] = useState(false)
-  const [page, setPage] = useState(1)
-  const [data, setData] = useState({ count: 0, page: 1, page_size: PAGE_SIZE, total_pages: 1, results: [] })
+  const [data, setData] = useState({ count: 0, results: [] })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-
-  const apiUrl = useMemo(() => {
-    const params = new URLSearchParams({
-      page: String(page),
-      page_size: String(PAGE_SIZE),
-    })
-
-    if (reason) {
-      params.set('reason', reason)
-    }
-
-    if (sortByValue) {
-      params.set('sort', 'value')
-    }
-
-    return `/api/disagreements/?${params.toString()}`
-  }, [page, reason, sortByValue])
 
   useEffect(() => {
     let shouldIgnore = false
@@ -51,7 +32,8 @@ function App() {
       setError('')
 
       try {
-        const response = await fetch(apiUrl)
+        const url = buildApiUrl(reason, sortByValue)
+        const response = await fetch(url)
         const body = await response.json()
 
         if (!response.ok) {
@@ -64,7 +46,7 @@ function App() {
       } catch (caughtError) {
         if (!shouldIgnore) {
           setError(caughtError.message)
-          setData({ count: 0, page: 1, page_size: PAGE_SIZE, total_pages: 1, results: [] })
+          setData({ count: 0, results: [] })
         }
       } finally {
         if (!shouldIgnore) {
@@ -78,29 +60,7 @@ function App() {
     return () => {
       shouldIgnore = true
     }
-  }, [apiUrl])
-
-  function changeReason(nextReason) {
-    setReason(nextReason)
-    setPage(1)
-  }
-
-  function changeSortByValue(shouldSort) {
-    setSortByValue(shouldSort)
-    setPage(1)
-  }
-
-  function goToPreviousPage() {
-    if (page > 1) {
-      setPage(page - 1)
-    }
-  }
-
-  function goToNextPage() {
-    if (page < data.total_pages) {
-      setPage(page + 1)
-    }
-  }
+  }, [reason, sortByValue])
 
   return (
     <main className="page-shell">
@@ -114,7 +74,7 @@ function App() {
       <section className="toolbar" aria-label="Disagreement filters">
         <label>
           Reason
-          <select value={reason} onChange={(event) => changeReason(event.target.value)}>
+          <select value={reason} onChange={(event) => setReason(event.target.value)}>
             <option value="">All reasons</option>
             {REASONS.map((reasonOption) => (
               <option value={reasonOption} key={reasonOption}>{REASON_LABELS[reasonOption]}</option>
@@ -125,7 +85,7 @@ function App() {
         <label className="checkbox-label">
           <input
             checked={sortByValue}
-            onChange={(event) => changeSortByValue(event.target.checked)}
+            onChange={(event) => setSortByValue(event.target.checked)}
             type="checkbox"
           />
           Sort by value
@@ -136,52 +96,59 @@ function App() {
       {isLoading && <p className="status">Loading disagreements...</p>}
 
       {!isLoading && !error && (
-        <>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Reason</th>
-                  <th>Record</th>
-                  <th>Location</th>
-                  <th>System A value</th>
-                  <th>System B value</th>
-                  <th>Message</th>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Reason</th>
+                <th>Record</th>
+                <th>Location</th>
+                <th>System A value</th>
+                <th>System B value</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.results.map((item) => (
+                <tr key={`${item.reason}-${item.org_id}-${item.record_id}-${item.b_entry_ids.join('-')}`}>
+                  <td>{REASON_LABELS[item.reason] || item.reason}</td>
+                  <td>{item.record_id}</td>
+                  <td>{item.location_name || item.location_id}</td>
+                  <td>{formatValue(item.a_value)}</td>
+                  <td>{formatValues(item.b_values)}</td>
+                  <td>{item.message}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {data.results.map((item) => (
-                  <tr key={`${item.reason}-${item.org_id}-${item.record_id}-${item.b_entry_ids.join('-')}`}>
-                    <td>{REASON_LABELS[item.reason] || item.reason}</td>
-                    <td>{item.record_id}</td>
-                    <td>{item.location_name || item.location_id}</td>
-                    <td>{formatValue(item.a_value)}</td>
-                    <td>{formatValues(item.b_values)}</td>
-                    <td>{item.message}</td>
-                  </tr>
-                ))}
-                {data.results.length === 0 && (
-                  <tr>
-                    <td colSpan="6" className="empty-state">No disagreements found.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="pagination" aria-label="Pagination controls">
-            <button type="button" onClick={goToPreviousPage} disabled={page <= 1}>
-              Previous
-            </button>
-            <span>Page {data.page} of {data.total_pages}</span>
-            <button type="button" onClick={goToNextPage} disabled={page >= data.total_pages}>
-              Next
-            </button>
-          </div>
-        </>
+              ))}
+              {data.results.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="empty-state">No disagreements found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </main>
   )
+}
+
+function buildApiUrl(reason, sortByValue) {
+  const params = new URLSearchParams()
+
+  if (reason) {
+    params.set('reason', reason)
+  }
+
+  if (sortByValue) {
+    params.set('sort', 'value')
+  }
+
+  const queryString = params.toString()
+  if (queryString) {
+    return `/api/disagreements/?${queryString}`
+  }
+
+  return '/api/disagreements/'
 }
 
 function formatValues(values) {
